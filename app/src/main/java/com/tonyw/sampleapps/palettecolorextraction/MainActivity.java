@@ -148,9 +148,29 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void openCamera() {
+        //Ask for permission to access/read storage for marshmallow and greater here
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(
+                        new String[]{Manifest.permission.CAMERA},   //Requesting the permission with the appropriate request code
+                        REQUEST_CODE_ACTION_ADD_FROM_CAMERA);
+            } else {
+                //If the permission was already granted the first time it will run the method to open the gallery intent
+                getPhotoFromCamera();
+            }
+        }
+    }
+
     private void getPhotoFromGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, REQUEST_CODE_ACTION_ADD_FROM_STORAGE);  //Check onActivityResult on how to handle the photo selected}
+    }
+
+    private void getPhotoFromCamera() {
+        Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(cameraIntent, REQUEST_CODE_ACTION_ADD_FROM_CAMERA);
     }
 
     @Override
@@ -165,7 +185,7 @@ public class MainActivity extends Activity {
         } else if (requestCode == REQUEST_CODE_ACTION_ADD_FROM_CAMERA) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Now user should be able to access the Camera
-//                getCameraPhoto();
+                getPhotoFromCamera();
             } else {
                 Toast.makeText(getApplicationContext(), "Please grant permission to proceed", Toast.LENGTH_LONG).show();
             }
@@ -176,8 +196,7 @@ public class MainActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         if (R.id.action_add_from_camera == item.getItemId()) {
             // Start Intent to retrieve an image (see OnActivityResult).
-            Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-            startActivityForResult(cameraIntent, REQUEST_CODE_ACTION_ADD_FROM_CAMERA);
+            openCamera();
             return true;
         } else if (R.id.action_add_from_storage == item.getItemId()) {
             // Start Intent to retrieve an image (see OnActivityResult).
