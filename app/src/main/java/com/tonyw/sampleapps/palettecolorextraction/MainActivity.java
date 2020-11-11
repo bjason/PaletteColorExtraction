@@ -2,6 +2,10 @@ package com.tonyw.sampleapps.palettecolorextraction;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
@@ -21,11 +25,16 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AbsListView;
 import android.widget.GridView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -34,13 +43,14 @@ import java.util.Date;
 import java.util.List;
 
 import static android.content.ContentValues.TAG;
-import static android.os.Environment.getExternalStoragePublicDirectory;
 
 
 public class MainActivity extends Activity {
     private static final int REQUEST_CODE_ACTION_ADD_FROM_STORAGE = 0;
     private static final int REQUEST_CODE_ACTION_ADD_FROM_CAMERA = 1;
     private static final String BUNDLE_SAVED_BITMAPS = "bitmaps";
+    private static final String DIR_NAME_FOR_IMAGE = "Images";
+
 
     private ArrayList<Bitmap> mBitmaps;
     private GridView mGridView;
@@ -75,10 +85,8 @@ public class MainActivity extends Activity {
                             @Override
                             public void onDismiss(AbsListView view, int[] reverseSortedPositions) {
                                 for (int position : reverseSortedPositions) {
-                                    // TODO swipe to delete
                                     mCardAdapter.remove(position);
                                 }
-                                mCardAdapter.notifyDataSetChanged();
                             }
                         });
         mGridView.setOnTouchListener(touchListener);
@@ -108,12 +116,23 @@ public class MainActivity extends Activity {
      * Adds cards with the default images stored in assets.
      */
     private void addCards() throws IOException {
-        AssetManager assetManager = getAssets();
-        for (String assetName : assetManager.list("sample_images")) {
-            InputStream assetStream = assetManager.open("sample_images/" + assetName);
-            Bitmap bitmap = BitmapFactory.decodeStream(assetStream);
-            assetStream.close();
-            addCard(bitmap);
+        // load sample images
+//        AssetManager assetManager = getAssets();
+//        for (String assetName : assetManager.list("sample_images")) {
+//            InputStream assetStream = assetManager.open("sample_images/" + assetName);
+//            Bitmap bitmap = BitmapFactory.decodeStream(assetStream);
+//            assetStream.close();
+//            addCard(bitmap);
+//        }
+        File directory = new File(getApplicationContext().getFilesDir(), "Palette" + File.separator + DIR_NAME_FOR_IMAGE);
+        if (directory.listFiles() == null) {
+//            TextView tv = findViewById(R.id.centerText);
+//            tv.setVisibility(View.VISIBLE);
+        } else {
+            for (File image : directory.listFiles()) {
+                Bitmap b = BitmapFactory.decodeStream(new FileInputStream(image));
+                addCard(b);
+            }
         }
     }
 
@@ -227,6 +246,28 @@ public class MainActivity extends Activity {
         if (bitmap != null) {
             addCard(bitmap);
             mGridView.smoothScrollToPosition(mBitmaps.size() - 1);
+
+            // save the image to internal memory
+            try {
+                File path = new File(getApplicationContext().getFilesDir(), "Palette" + File.separator + DIR_NAME_FOR_IMAGE);
+                if (!path.exists()) {
+                    path.mkdirs();
+                }
+                // use current time to name the picture
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssz");
+                String imageName = sdf.format(new Date());
+
+                Log.d(TAG, "onActivityResult() returned: " + sdf);
+
+                File outFile = new File(path, imageName + ".jpeg");
+                FileOutputStream outputStream = new FileOutputStream(outFile);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                outputStream.close();
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, "Saving received message failed with", e);
+            } catch (IOException e) {
+                Log.e(TAG, "Saving received message failed with", e);
+            }
         }
     }
 }

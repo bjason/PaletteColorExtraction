@@ -4,10 +4,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:columnWidth="@dimen/column_width"
-    android:numColumns="auto_fit"
-    android:verticalSpacing="5dp"
-    android:horizontalSpacing="5dp"
-    android:stretchMode="columnWidth"
     android:gravity="center"
+    android:horizontalSpacing="5dp"
+    android:numColumns="auto_fit"
     android:scrollbars="none"
-    />
+    android:stretchMode="columnWidth"
+    android:verticalSpacing="5dp">
+
+<!--    <TextView-->
+<!--        android:id="@+id/centerText"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_gravity="center"-->
+<!--        android:text="Add your first picture"-->
+<!--        android:visibility="invisible" />-->
+</GridView>
