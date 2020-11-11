@@ -11,7 +11,7 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.support.v7.graphics.Palette;
+import androidx.palette.graphics.Palette;
 import android.view.View;
 import android.widget.Toast;
 

@@ -1,20 +1,40 @@
 package com.tonyw.sampleapps.palettecolorextraction;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
+
+import android.os.Environment;
+import android.os.PersistableBundle;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AbsListView;
 import android.widget.GridView;
+import android.widget.Toast;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import static android.content.ContentValues.TAG;
+import static android.os.Environment.getExternalStoragePublicDirectory;
 
 
 public class MainActivity extends Activity {
@@ -32,7 +52,8 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         if (savedInstanceState != null) {
-            mBitmaps = savedInstanceState.getParcelableArrayList(BUNDLE_SAVED_BITMAPS);
+//            mBitmaps = savedInstanceState.getParcelableArrayList(BUNDLE_SAVED_BITMAPS);
+            mBitmaps = (ArrayList<Bitmap>) WeakDataHolder.getInstance().getData("1");
         } else {
             mBitmaps = new ArrayList<>();
         }
@@ -54,6 +75,7 @@ public class MainActivity extends Activity {
                             @Override
                             public void onDismiss(AbsListView view, int[] reverseSortedPositions) {
                                 for (int position : reverseSortedPositions) {
+                                    // TODO swipe to delete
                                     mCardAdapter.remove(position);
                                 }
                                 mCardAdapter.notifyDataSetChanged();
@@ -78,7 +100,8 @@ public class MainActivity extends Activity {
     public void onSaveInstanceState(@NonNull Bundle savedState) {
         super.onSaveInstanceState(savedState);
 
-        savedState.putParcelableArrayList(BUNDLE_SAVED_BITMAPS, mBitmaps);
+//        savedState.putParcelableArrayList(BUNDLE_SAVED_BITMAPS, mBitmaps);
+        WeakDataHolder.getInstance().saveData("1", mBitmaps);
     }
 
     /**
@@ -109,6 +132,46 @@ public class MainActivity extends Activity {
         return true;
     }
 
+    //Methods to open the Gallery
+    private void openGallery() {
+        //Ask for permission to access/read storage for marshmallow and greater here
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},   //Requesting the permission with the appropriate request code
+                        REQUEST_CODE_ACTION_ADD_FROM_STORAGE);
+            } else {
+                //If the permission was already granted the first time it will run the method to open the gallery intent
+                getPhotoFromGallery();
+            }
+        }
+    }
+
+    private void getPhotoFromGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, REQUEST_CODE_ACTION_ADD_FROM_STORAGE);  //Check onActivityResult on how to handle the photo selected}
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_CODE_ACTION_ADD_FROM_STORAGE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Now user should be able to access gallery
+                getPhotoFromGallery();
+            } else {
+                Toast.makeText(getApplicationContext(), "Please grant permission to proceed", Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == REQUEST_CODE_ACTION_ADD_FROM_CAMERA) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Now user should be able to access the Camera
+//                getCameraPhoto();
+            } else {
+                Toast.makeText(getApplicationContext(), "Please grant permission to proceed", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (R.id.action_add_from_camera == item.getItemId()) {
@@ -118,11 +181,7 @@ public class MainActivity extends Activity {
             return true;
         } else if (R.id.action_add_from_storage == item.getItemId()) {
             // Start Intent to retrieve an image (see OnActivityResult).
-            Intent intent = new Intent();
-            intent.setType("image/*");
-            intent.setAction(Intent.ACTION_GET_CONTENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            startActivityForResult(intent, REQUEST_CODE_ACTION_ADD_FROM_STORAGE);
+            openGallery();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -150,6 +209,7 @@ public class MainActivity extends Activity {
             addCard(bitmap);
             mGridView.smoothScrollToPosition(mBitmaps.size() - 1);
         }
-        super.onActivityResult(requestCode, resultCode, data);
     }
 }
+
+
